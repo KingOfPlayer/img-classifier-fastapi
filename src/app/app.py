@@ -27,12 +27,19 @@ async def read_main():
 
 @app.post("/predict", status_code=200)
 async def predict_torch(file: UploadFile):
+    if file.content_type not in ["image/jpeg", "image/png"]:
+        raise HTTPException(
+            status_code=400, detail="Invalid file type. Only JPEG and PNG are allowed."
+        )
     contents = await file.read()
+    if not contents:
+        raise HTTPException(
+            status_code=400, detail="No file uploaded. Please upload an image."
+        )
     prediction = Object_detection(contents)
     if not prediction:
         raise HTTPException(
-            status_code=404, detail="Image could not be downloaded"
-
+            status_code=404, detail="Prediction failed. Please try again."
         )
 
     return {"status_code": 200,
@@ -41,7 +48,8 @@ async def predict_torch(file: UploadFile):
 
 @app.get("/UI", response_class=HTMLResponse)
 async def ui():
-    return """<!DOCTYPE html>
+    return """
+<!DOCTYPE html>
 <html>
 <head>
     <title>Image Upload</title>
@@ -53,4 +61,5 @@ async def ui():
         <input type="submit" value="Upload">
     </form>
 </body>
-</html>"""
+</html>
+"""

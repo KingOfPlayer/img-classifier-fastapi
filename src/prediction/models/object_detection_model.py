@@ -13,7 +13,12 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_FILE = os.path.join(BASE_DIR, "detector.pth")
 LE_FILE = os.path.join(BASE_DIR, "le.pickle")
-DEVICE = "cpu" # torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    DEVICE = torch.device("mps")
+elif torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+else:
+    DEVICE = torch.device("cpu")
 
 #model
 class ObjectDetectionModel(nn.Module):
@@ -70,7 +75,7 @@ def get_model():
             param.requires_grad = False
         ODModel = ObjectDetectionModel(resnet,len(le.classes_))
         print("Loading {}".format(MODEL_FILE))
-        ODModel = torch.load(MODEL_FILE, map_location=DEVICE, weights_only=False)
+        ODModel.load_state_dict(torch.load(MODEL_FILE, map_location=DEVICE))
         ODModel.eval()
         print(ODModel)
 
@@ -124,6 +129,8 @@ def predict(input_batch):
         inference_time = time.time()
         (boxPreds, labelPreds) = model(input_batch)
         inference_time = time.time() - inference_time
+    
+    print("Inference time: {:.4f}s".format(inference_time))
 
     labels_percentage = torch.nn.functional.softmax(labelPreds, dim=1)[0] * 100
     print(labels_percentage.shape)

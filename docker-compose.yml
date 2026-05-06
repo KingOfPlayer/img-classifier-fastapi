@@ -1,0 +1,9 @@
+
+services:
+  app:
+    container_name: img-classifier-fastapi
+    build: .
+    ports:
+      - "7001:7001"
+    volumes:
+      - .:/src/
